@@ -1,44 +1,44 @@
-// walkLoop.js
+// behaviors/walkLoop.js
 module.exports = function walkLoop(bot) {
   if (!bot.entity || !bot.entity.position) return;
 
-  // Initialize yaw if not set
-  if (bot.pathYaw === undefined) bot.pathYaw = Math.random() * 360;
+  const speed = 0.2; // movement speed
+  const yaw = bot.pathYaw || Math.random() * 360;
+  const rad = (yaw * Math.PI) / 180;
 
-  const speed = 0.4; // movement speed per tick
-  const rad = (bot.pathYaw * Math.PI) / 180;
-
-  // Calculate velocity
   const velocity = {
     x: Math.cos(rad) * speed,
     y: 0,
-    z: Math.sin(rad) * speed,
+    z: Math.sin(rad) * speed
   };
 
-  // Send motion to server
-  bot.queue('set_actor_motion', {
-    runtime_entity_id: bot.entity.runtime_id,
-    motion: velocity,
-  });
-
-  // Predict new position
+  const pos = bot.entity.position;
   const newPos = {
-    x: bot.entity.position.x + velocity.x,
-    y: bot.entity.position.y,
-    z: bot.entity.position.z + velocity.z,
+    x: pos.x + velocity.x,
+    y: pos.y,
+    z: pos.z + velocity.z
   };
 
-  // Send move_player packet
-  bot.queue('move_player', {
-    runtime_entity_id: bot.entity.runtime_id,
-    position: newPos,
-    pitch: 0,
-    yaw: bot.pathYaw,
-    head_yaw: bot.pathYaw,
-    mode: 0,
-    on_ground: true,
-    ridden_runtime_id: 0,
-  });
+  try {
+    // Update server about bot motion
+    bot.queue('set_actor_motion', {
+      runtime_entity_id: bot.entity.runtime_id,
+      motion: velocity
+    });
 
-  console.log('Walking yaw:', bot.pathYaw.toFixed(1));
+    bot.queue('move_player', {
+      runtime_entity_id: bot.entity.runtime_id,
+      position: newPos,
+      pitch: 0,
+      yaw: yaw,
+      head_yaw: yaw,
+      mode: 0, // normal
+      on_ground: true,
+      ridden_runtime_id: 0
+    });
+
+    bot.entity.position = newPos;
+  } catch (err) {
+    console.log('Walk error:', err.message);
+  }
 };
