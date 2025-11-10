@@ -1,18 +1,11 @@
 const { createClient } = require('bedrock-protocol');
 const behaviorManager = require('./behaviors/behaviorManager');
 
-// Xbox / Microsoft credentials
-const xboxEmail = 'sealgaildelarosa20@gmail.com';
-const xboxPassword = 'Codezyy@72443';
-
 // Create bot
 const bot = createClient({
   host: 'kupaleros-rg1D.aternos.me',
   port: 40915,
-  username: sealgaildelarosa20@gmail.com,    // Email is used for Xbox auth
-  password: Codezyy@72443, // Xbox password
   version: '1.21.120',   // Minecraft Bedrock version
-  auth: 'microsoft'      // Use Microsoft login
 });
 
 // Bot spawned
