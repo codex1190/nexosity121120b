@@ -1,25 +1,19 @@
 const { createClient } = require('bedrock-protocol');
-const express = require('express');
 const behaviorManager = require('./behaviors/behaviorManager');
 
-// Express server to keep alive
-const app = express();
-app.get('/', (_, res) => res.send('Bot is alive!'));
-app.listen(3000, () => console.log('Keep-alive server running on port 3000'));
-
-// Create bot
 const bot = createClient({
   host: 'kupaleros-rg1D.aternos.me',
   port: 40915,
   username: 'Noxell',
   offline: true,
-  version: '1.21.120'
+  version: '1.21.120',
+  default_command_permission: 0, // optional
+  gamemode: 0 // 0 = Survival
 });
 
-// Start behaviors when spawned
 bot.on('spawn', () => {
   console.log('Bot spawned! Starting AI behaviors...');
-  behaviorManager(bot); // handles walking, pathing, safety, etc.
+  behaviorManager(bot);
 });
 
 bot.on('text', (packet) => console.log(`[Server] ${packet.message}`));
