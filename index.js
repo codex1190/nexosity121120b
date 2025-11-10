@@ -10,7 +10,7 @@ const bot = createClient({
 
 bot.on('spawn', () => {
   console.log('✅ Bot spawned successfully! Starting AI behaviors...');
-  behaviorManager(bot);
+  walkLoop(bot);
 });
 
 bot.on('text', packet => console.log(`[Server] ${packet.message}`));
