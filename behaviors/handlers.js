@@ -1,9 +1,9 @@
 // behaviors/handlers.js
 const walkLoop = require('./walkLoop');
 
-// Respawn if dead
+// Respawn
 function respawnIfDead(bot) {
-  if (!bot.entity) return false;
+  if (!bot?.entity) return false;
   if (bot.entity.isDead) {
     console.log('Bot is dead, respawning...');
     try { bot.queue('respawn'); } catch(e) { console.log('Respawn failed:', e.message); }
@@ -14,15 +14,14 @@ function respawnIfDead(bot) {
 
 // Lost safety
 function handleLostSafety(bot) {
-  if (!bot.entity || !bot.entity.position) return false;
-  if (bot.entity.position.y < 1) return true;
-  return false;
+  if (!bot?.entity?.position) return false;
+  return bot.entity.position.y < 1;
 }
 
-// Hunger
+// Hunger (simplified)
 function handleHunger(bot) {
-  if (!bot.inventory || !bot.inventory.slots) return false;
-  const foodSlot = Object.values(bot.inventory.slots).find(item => item && item.name && item.name.includes('apple'));
+  if (!bot.inventory?.slots) return false;
+  const foodSlot = Object.values(bot.inventory.slots).find(item => item?.name?.includes('apple'));
   if (foodSlot) {
     console.log('Eating food:', foodSlot.name);
     try { bot.queue('use_item', { slot: foodSlot.slot }); } catch(e) { console.log('Failed to eat:', e.message); }
@@ -31,7 +30,7 @@ function handleHunger(bot) {
   return false;
 }
 
-// Night safety
+// Night safety (placeholder)
 function handleNightSafety(bot) {
   const hour = new Date().getUTCHours();
   if (hour >= 18 || hour <= 6) {
@@ -43,8 +42,8 @@ function handleNightSafety(bot) {
 
 // Mob avoidance
 function handleMobAvoidance(bot) {
-  if (!bot.entities || !bot.entity || !bot.entity.position) return false;
-  const hostile = Object.values(bot.entities).find(e => e.type === 'mob' && e.position && e.position.distanceTo(bot.entity.position) < 5);
+  if (!bot.entities || !bot?.entity?.position) return false;
+  const hostile = Object.values(bot.entities).find(e => e.type === 'mob' && e.position?.distanceTo(bot.entity.position) < 5);
   if (hostile) {
     console.log('Mob nearby! Avoiding...');
     bot.pathYaw = (bot.pathYaw + 180) % 360;
