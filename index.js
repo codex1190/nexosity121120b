@@ -1,57 +1,108 @@
-const { createClient } = require('bedrock-protocol');
-const express = require('express');
-const fs = require('fs');
+const walkLoop = require('./walkLoop');
 
-// Load behavior functions
-const { handleNightSafety, handleHunger, handleMobAvoidance, handlePathing, respawnIfDead } = require('./behaviors');
-const walkLoop = require('./behaviors/walkLoop');
+// ---------- Respawn handler ----------
+function respawnIfDead(bot) {
+  if (!bot.entity) return false;
 
-// Create a basic Express server to keep the bot alive
-const app = express();
-app.get('/', (_, res) => res.send('Bot is alive!'));
-app.listen(3000, () => console.log('Keep-alive server running on port 3000'));
-
-// Create bot
-
-const bot = createClient({
-  host: 'kupaleros-rg1D.aternos.me',
-  port: 40915,
-  username: 'Noxell',
-  offline: true,
-  version: '1.21.120'
-});
-
-let isNight = false;
-
-// Bot event handlers
-bot.on('spawn', () => {
-  console.log('Noxell joined the server!');
-  console.log('Noxell spawned! Starting behaviors...');
-
-  walkLoop(bot);
-  handlePathing(bot);
-});
-
-bot.on('time', (packet) => {
-  const time = packet.time;
-  isNight = time > 13000;
-});
-
-bot.on('update_attributes', () => {
-  handleHunger(bot);
-});
-
-bot.on('mob_spawn', () => {
-  handleMobAvoidance(bot);
-});
-
-bot.on('death_info', () => {
-  respawnIfDead(bot);
-});
-
-// Night safety check every 10 seconds
-setInterval(() => {
-  if (isNight) {
-    handleNightSafety(bot);
+  // Bedrock bots have isDead property
+  if (bot.entity.isDead) {
+    console.log('Bot is dead, respawning...');
+    // Send respawn packet
+    try {
+      bot.queue('respawn');
+    } catch (err) {
+      console.log('Respawn failed:', err.message);
+    }
+    return true;
   }
-}, 10000);
+
+  return false;
+}
+
+// ---------- Lost safety handler ----------
+function handleLostSafety(bot) {
+  if (!bot.entity || !bot.entity.position) return false;
+
+  // Example: lost if below Y=1 (falling) or falling off map
+  if (bot.entity.position.y < 1) return true;
+
+  return false;
+}
+
+// ---------- Hunger handler ----------
+function handleHunger(bot) {
+  // Bedrock bots don’t always track hunger directly
+  if (!bot.inventory || !bot.inventory.slots) return false;
+
+  // Find first food (apple) in inventory
+  const foodSlot = Object.values(bot.inventory.slots).find(
+    item => item && item.name && item.name.includes('apple')
+  );
+
+  if (foodSlot) {
+    console.log('Eating food:', foodSlot.name);
+    try {
+      // Send use_item packet
+      bot.queue('use_item', { slot: foodSlot.slot });
+    } catch (err) {
+      console.log('Failed to eat:', err.message);
+    }
+    return true;
+  }
+
+  return false;
+}
+
+// ---------- Night safety handler ----------
+function handleNightSafety(bot) {
+  // Simplified: use server time if available
+  // Placeholder: just use local UTC time for demo
+  const hour = new Date().getUTCHours();
+  if (hour >= 18 || hour <= 6) {
+    // Nighttime
+    console.log('Night detected, staying safe...');
+    return true;
+  }
+  return false;
+}
+
+// ---------- Mob avoidance handler ----------
+function handleMobAvoidance(bot) {
+  if (!bot.entities || !bot.entity || !bot.entity.position) return false;
+
+  // Find hostile mobs within 5 blocks
+  const hostile = Object.values(bot.entities).find(
+    e =>
+      e.type === 'mob' &&
+      e.position &&
+      e.position.distanceTo(bot.entity.position) < 5
+  );
+
+  if (hostile) {
+    console.log('Mob nearby! Avoiding...');
+    // Turn 180 degrees to avoid
+    bot.pathYaw = (bot.pathYaw + 180) % 360;
+    return true;
+  }
+
+  return false;
+}
+
+// ---------- Pathing handler ----------
+function handlePathing(bot) {
+  try {
+    walkLoop(bot);
+  } catch (err) {
+    console.log('Pathing failed:', err.message);
+  }
+}
+
+// ---------- Export all handlers ----------
+module.exports = {
+  respawnIfDead,
+  handleLostSafety,
+  handleHunger,
+  handleNightSafety,
+  handleMobAvoidance,
+  handlePathing
+};
