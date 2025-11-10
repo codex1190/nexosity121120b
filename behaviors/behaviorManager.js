@@ -1,12 +1,12 @@
 // behaviorManager.js
-const walkLoop = require('./walkLoop');
+const walkLoop = require('./walkLoop');       // inside behaviors/
 const {
   handleNightSafety,
   handleLostSafety,
   handleHunger,
   handleMobAvoidance,
   respawnIfDead
-} = require('./index');
+} = require('./handlers');                     // inside behaviors/
 
 module.exports = function behaviorManager(bot) {
   let activeBehavior = null;
@@ -16,6 +16,7 @@ module.exports = function behaviorManager(bot) {
     if (activeBehavior !== name) {
       activeBehavior = name;
       fn();
+      console.log(`[Behavior] Switched to: ${name}`);
     }
   }
 
@@ -24,7 +25,10 @@ module.exports = function behaviorManager(bot) {
     if (activeBehavior === 'pathing') bot.pathYaw = Math.random() * 360;
   }, 5000);
 
-  async function loop() {
+  // Main AI loop
+  setInterval(() => {
+    if (!bot || !bot.entity) return;
+
     if (cooldown > 0) {
       cooldown--;
       return;
@@ -37,14 +41,14 @@ module.exports = function behaviorManager(bot) {
       return;
     }
 
-    // 2️⃣ Lost safety check
+    // 2️⃣ Lost safety
     if (handleLostSafety(bot)) {
       switchBehavior('lostSafety', () => console.log('Finding safe spot...'));
       cooldown = 20;
       return;
     }
 
-    // 3️⃣ Hunger management
+    // 3️⃣ Hunger
     if (handleHunger(bot)) {
       switchBehavior('hunger', () => console.log('Eating food...'));
       cooldown = 20;
@@ -71,11 +75,9 @@ module.exports = function behaviorManager(bot) {
     }
 
     if (activeBehavior === 'pathing') {
-      walkLoop(bot); // move bot every tick
-      cooldown = 0; // pathing should run continuously
+      walkLoop(bot); // continuously move bot
+      cooldown = 0;
     }
-  }
 
-  // Run the loop every 50ms (~20 ticks per second)
-  setInterval(loop, 50);
+  }, 50); // 20 ticks per second
 };
